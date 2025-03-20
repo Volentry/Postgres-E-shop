@@ -12,7 +12,50 @@ app.use(helmet())
 app.use(morgan("dev"))
 import productRoutes from './routes/productRoutes.js'
 import { sql } from "./config/db.js"
-app.use('/api/product',productRoutes)
+import arcjet from "arcjet"
+import { aj } from "./lib/arcjet.js"
+app.use(async (req,res,next)=>{
+   try {
+    const decision = await aj.protect(req,{
+        requested:1
+    })
+
+    if(decision.isDenied()){
+        if(decision.reason.isRateLimit){
+            res.status(429).json({
+                error:"too many requests"
+            })
+        }
+        if(decision.reason.isBot){
+            res.status(403).json({
+                error:"Bot access denied"
+            })
+            
+        }else{
+            res.status(403).json({
+                error:"Forbidden"
+            })   
+            
+        }
+        return 
+        
+    }
+    if(decision.results.some((result)=>result.reason.isBot()&&result.reason.isSpoofed())){
+        res.status(403).json({
+            error:"Spoofed bot detected"
+        }) 
+    }
+    next()
+   } catch (error) {
+
+    res.status(500).json({
+        message:"Something went wrong"
+    })
+    next(error)
+    
+   }
+})
+app.use('/api/products',productRoutes)
 async function  initDB(params) {
     try {
         await sql`
