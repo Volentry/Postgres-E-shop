@@ -2,6 +2,7 @@ import express from "express"
 import helmet from "helmet"
 import morgan from "morgan"
 import dotenv from 'dotenv'
+import path from 'path'
 dotenv.config()
 const PORT = process.env.PORT
 import cors from 'cors'
@@ -22,17 +23,17 @@ app.use(async (req,res,next)=>{
 
     if(decision.isDenied()){
         if(decision.reason.isRateLimit){
-            res.status(429).json({
+            return res.status(429).json({
                 error:"too many requests"
             })
         }
         if(decision.reason.isBot){
-            res.status(403).json({
+           return  res.status(403).json({
                 error:"Bot access denied"
             })
             
         }else{
-            res.status(403).json({
+            return res.status(403).json({
                 error:"Forbidden"
             })   
             
@@ -41,21 +42,28 @@ app.use(async (req,res,next)=>{
         
     }
     if(decision.results.some((result)=>result.reason.isBot()&&result.reason.isSpoofed())){
-        res.status(403).json({
+       return  res.status(403).json({
             error:"Spoofed bot detected"
         }) 
     }
     next()
    } catch (error) {
 
-    res.status(500).json({
+    return res.status(500).json({
         message:"Something went wrong"
     })
     next(error)
     
    }
 })
+const __dirname = path.resolve()
 app.use('/api/products',productRoutes)
+if(process.env.NODE_ENV==="production"){
+    app.use(express.static(path.join(__dirname,"/frontend/dist")))
+    app.get("*",(req,res)=>{
+        res.sendFile(path.resolve(__dirname,"frontend","dist","index.html"))
+    })
+}
 async function  initDB(params) {
     try {
         await sql`

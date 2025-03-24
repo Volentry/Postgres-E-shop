@@ -1,14 +1,25 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+
 import './App.css'
+import NavBar from './componenets/NavBar'
+import {Route,Routes} from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import ProductPage from './pages/ProductPage'
+import { useThemeStore } from './store/useThemeStore'
+import { Toaster } from 'react-hot-toast'
 
 function App() {
-  const [count, setCount] = useState(0)
 
+  const {theme} = useThemeStore()
+  
   return (
-   <div className='text-red-500'>
-    hi
+   <div className='min-h-screen bg-base-200 transition-colors duration-300' data-theme = {theme}>
+
+    <NavBar />
+    <Routes>
+      <Route path="/"  element={<HomePage/>}></Route>
+      <Route path="/product/:id" element = {<ProductPage/>}></Route>
+    </Routes>
+    <Toaster></Toaster>
    </div>
   )
 }
